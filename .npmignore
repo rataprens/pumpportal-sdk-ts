@@ -1,0 +1,18 @@
+# Ignorar los archivos de configuración de TypeScript
+tsconfig.json
+tsconfig.build.json
+
+# Ignorar las carpetas de prueba y de desarrollo
+tests/
+test/
+
+# Ignorar los archivos de construcción y temporales
+dist/
+*.log
+
+# Ignorar el archivo de configuración de npm
+npm-debug.log
+
+# Ignorar los archivos de configuración específicos de los IDEs
+.vscode/
+.idea/
