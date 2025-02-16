@@ -1,4 +1,3 @@
-
 # PumpPortal SDK
 
 A TypeScript SDK to interact with the PumpPortal API. This SDK provides an easy-to-use interface for subscribing to token creation events, trades, and liquidity updates on PumpPortal.
@@ -9,6 +8,8 @@ A TypeScript SDK to interact with the PumpPortal API. This SDK provides an easy-
 - Unsubscribe from events.
 - Simple and easy-to-use TypeScript interface.
 - WebSocket-based communication for real-time updates.
+- Create wallets directly via the API.
+- Trade tokens using API or locally signed transactions.
 
 ## Installation
 
@@ -42,6 +43,14 @@ async function testPumpPortalSDK() {
     sdk.unsubscribe('subscribeNewToken');
     sdk.close(); // Close the WebSocket connection
   }, 10000);
+
+  // Create a new wallet
+  try {
+    const wallet = await sdk.createWallet();
+    console.log('Wallet created:', wallet);
+  } catch (error) {
+    console.error('Error creating wallet:', error);
+  }
 }
 
 testPumpPortalSDK();
@@ -78,6 +87,26 @@ Closes the WebSocket connection.
 Sets up a callback to handle incoming messages.
 
 - **callback**: A function that receives the raw message data as a string.
+
+#### `createWallet(): Promise<CreateWalletResponse>`
+
+Creates a new wallet and returns its details.
+
+- **Returns**: `CreateWalletResponse` containing `apiKey`, `walletPublicKey`, and `privateKey`.
+
+#### `tradeToken(options: TradeOptions): Promise<any>`
+
+Trades a token using the API.
+
+- **options**: Contains trade parameters including API key, action (buy/sell), token mint address, amount, slippage, priority fee, and pool selection.
+- **Returns**: The result of the trade operation.
+
+#### `tradeLocalToken(options: TradeLocalOptions): Promise<VersionedTransaction>`
+
+Generates a locally signed transaction for trading a token.
+
+- **options**: Similar to `tradeToken`, but requires a user-provided public key.
+- **Returns**: A `VersionedTransaction` object ready for signing and submission.
 
 ## Contributing
 

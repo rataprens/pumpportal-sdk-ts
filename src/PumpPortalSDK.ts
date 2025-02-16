@@ -1,17 +1,19 @@
 import WebSocket from 'ws';
+import fetch from 'node-fetch';
+import { VersionedTransaction } from '@solana/web3.js';
 
 // Define subscription events
-type PumpPortalEvent = 
-  | 'subscribeNewToken' 
-  | 'subscribeTokenTrade' 
-  | 'subscribeAccountTrade' 
+type PumpPortalEvent =
+  | 'subscribeNewToken'
+  | 'subscribeTokenTrade'
+  | 'subscribeAccountTrade'
   | 'subscribeRaydiumLiquidity';
 
-// Define unsubscribe events (with the 'unsubscribe' prefix)
-type PumpPortalUnsubscribeEvent = 
-  | 'unsubscribeNewToken' 
-  | 'unsubscribeTokenTrade' 
-  | 'unsubscribeAccountTrade' 
+// Define unsubscription events (with 'unsubscribe' prefix)
+type PumpPortalUnsubscribeEvent =
+  | 'unsubscribeNewToken'
+  | 'unsubscribeTokenTrade'
+  | 'unsubscribeAccountTrade'
   | 'unsubscribeRaydiumLiquidity';
 
 type PumpPortalPayload = {
@@ -19,10 +21,39 @@ type PumpPortalPayload = {
   keys?: string[];
 };
 
+type TradeOptions = {
+  apiKey: string;
+  action: 'buy' | 'sell';
+  mint: string;
+  amount: number | string; // Can be a percentage string like "100%"
+  denominatedInSol: boolean;
+  slippage: number;
+  priorityFee: number;
+  pool?: 'pump' | 'raydium' | 'auto';
+  skipPreflight?: boolean;
+};
+
+type TradeLocalOptions = {
+  publicKey: string;
+  action: 'buy' | 'sell';
+  mint: string;
+  amount: number | string;
+  denominatedInSol: boolean;
+  slippage: number;
+  priorityFee: number;
+  pool?: 'pump' | 'raydium' | 'auto';
+};
+
+type CreateWalletResponse = {
+  apiKey: string;
+  walletPublicKey: string;
+  privateKey: string;
+};
+
 export default class PumpPortalSDK {
   private ws: WebSocket;
-  private onMessageCallback?: (data: string) => void; // Callback to handle incoming messages
-  private isSubscribed: Set<PumpPortalEvent> = new Set(); // To track subscriptions
+  private onMessageCallback?: (data: string) => void;
+  private isSubscribed: Set<PumpPortalEvent> = new Set();
 
   constructor() {
     this.ws = new WebSocket('wss://pumpportal.fun/api/data');
@@ -32,7 +63,7 @@ export default class PumpPortalSDK {
 
     this.ws.on('message', (data) => {
       if (this.onMessageCallback) {
-        this.onMessageCallback(data.toString());  // Call the callback if defined
+        this.onMessageCallback(data.toString());
       }
     });
 
@@ -55,26 +86,26 @@ export default class PumpPortalSDK {
 
   public subscribe(event: PumpPortalEvent, keys: string[] = []): void {
     if (this.isSubscribed.has(event)) {
-      console.log(`You are already subscribed to ${event}`);
-      return; // Prevent duplicate subscriptions
+      console.log(`Already subscribed to ${event}`);
+      return;
     }
 
     const payload: PumpPortalPayload = { method: event, keys };
     this.send(payload);
-    this.isSubscribed.add(event);  // Register the subscription
+    this.isSubscribed.add(event);
     console.log(`Subscribing to ${event}`);
   }
 
   public unsubscribe(event: PumpPortalEvent, keys: string[] = []): void {
     if (!this.isSubscribed.has(event)) {
-      console.log(`You are not subscribed to ${event}`);
-      return; // Don't attempt to unsubscribe if not subscribed
+      console.log(`Not subscribed to ${event}`);
+      return;
     }
 
     const unsubscribeEvent = `unsubscribe${event.slice(9)}` as PumpPortalUnsubscribeEvent;
     const payload: PumpPortalPayload = { method: unsubscribeEvent, keys };
     this.send(payload);
-    this.isSubscribed.delete(event);  // Remove the subscription
+    this.isSubscribed.delete(event);
     console.log(`Unsubscribing from ${event}`);
   }
 
@@ -83,8 +114,75 @@ export default class PumpPortalSDK {
     console.log('WebSocket connection closed');
   }
 
-  // Method to set a callback for incoming messages
   public onMessage(callback: (data: string) => void): void {
     this.onMessageCallback = callback;
+  }
+
+  public async tradeToken(options: TradeOptions): Promise<any> {
+    try {
+      const response = await fetch(`https://pumpportal.fun/api/trade?api-key=${options.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: options.action,
+          mint: options.mint,
+          amount: options.amount,
+          denominatedInSol: options.denominatedInSol,
+          slippage: options.slippage,
+          priorityFee: options.priorityFee,
+          pool: options.pool || 'pump',
+          skipPreflight: options.skipPreflight ?? true
+        })
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Trade request failed:', error);
+      throw error;
+    }
+  }
+
+  public async tradeLocalToken(options: TradeLocalOptions): Promise<VersionedTransaction> {
+    try {
+      const response = await fetch(`https://pumpportal.fun/api/trade-local`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(options)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch transaction: ${response.statusText}`);
+      }
+
+      const serializedTx = await response.arrayBuffer();
+      return VersionedTransaction.deserialize(new Uint8Array(serializedTx));
+    } catch (error) {
+      console.error('Error fetching local transaction:', error);
+      throw error;
+    }
+  }
+
+  public async createWallet(): Promise<CreateWalletResponse> {
+    try {
+      const response = await fetch("https://pumpportal.fun/api/create-wallet", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create wallet: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      const walletData: CreateWalletResponse = data as CreateWalletResponse;
+
+      return walletData; 
+    } catch (error) {
+      console.error('Error creating wallet:', error);
+      throw error;
+    }
   }
 }

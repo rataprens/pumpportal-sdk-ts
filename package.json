@@ -1,21 +1,35 @@
 {
   "name": "pumpportal-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/PumpPortalSDK.js",
   "types": "dist/PumpPortalSDK.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["pumpportal", "sdk", "websocket", "typescript"],
+  "keywords": [
+    "pumpportal",
+    "sdk",
+    "websocket",
+    "typescript"
+  ],
   "author": "rataprns",
   "license": "ISC",
- "description": "A TypeScript SDK to interact with the PumpPortal API. This SDK provides a simple interface for subscribing to events, receiving real-time updates, and managing token trades and liquidity.",
+  "description": "A TypeScript SDK to interact with the PumpPortal API. This SDK provides a simple interface for subscribing to events, receiving real-time updates, and managing token trades and liquidity.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rataprens/pumpportal-sdk-ts.git"
+  },
+  "homepage": "https://github.com/rataprens/pumpportal-sdk-ts#readme",
   "devDependencies": {
+    "@types/bs58": "^4.0.4",
+    "@types/node-fetch": "^2.6.12",
     "@types/ws": "^8.5.14",
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "node-fetch": "^3.3.2",
     "ws": "^8.18.0"
   },
   "files": [
